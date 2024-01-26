@@ -1,0 +1,1 @@
+Basat Hızlı satış sistemi için C++ ve Drogon Web Framework ile yazılmış REST API sunucu uygulaması.

@@ -2,7 +2,6 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=intellij+all,visualstudio,visualstudiocode,cmake,c,c++
 build/
 test/
-config.copy.json
 ### C ###
 # Prerequisites
 *.d

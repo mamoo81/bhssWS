@@ -1,3 +1,4 @@
 build/
 test/
 config_copy.json
+.vscode/

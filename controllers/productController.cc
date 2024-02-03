@@ -4,31 +4,32 @@
 #include <string>
 #include <fmt/format.h> // string ifadelere argüman eklemek için. c++20 ile geldi bu özellik ama bunda çalıştıramadım. o yüzden fmt kütüphanesini kullandım. örnek; fmt::format("Merhaba {0}.", "Mehmet")
 
+pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+pqxx::result sqlResult;
+pqxx::work work(sqlConn);
+
 void productController::sayHello(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto resp = HttpResponse::newHttpResponse();
-
     resp->setBody("Merhaba, Drogon çalışıyor...");
-
     callback(resp);
 }
 
 void productController::getProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, std::string pBarcode)
 {
-    pqxx::connection conn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
-    pqxx::work work(conn);
-    pqxx::result result = work.exec_params("select id, barcode, name, unit, category, subcategory, price, kdv, otv, date, lastdate, producer from productcards where barcode = $1", pBarcode);
+    sqlResult = work.exec_params("select id, barcode, name, unit, category, subcategory, price, kdv, otv, date, lastdate, producer from productcards where barcode = $1", pBarcode);
 
     Json::Value json;
 
-    if(result.size() <= 0){
+    if(sqlResult.size() <= 0){
         
         Json::Value jVal;
         jVal["getProduct"] = "null";
         json = jVal;
     }
     else{
-        for (auto &&row : result)
+        for (auto &&row : sqlResult)
         {   
             Json::Value jProduct;
             jProduct["id"] = row[0].as<int>();
@@ -49,46 +50,117 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
             json = jVal;
         }
     }
+
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();// zorunlu değil
     auto resp = HttpResponse::newHttpJsonResponse(json);
     resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);// zorunlu değil
     callback(resp);
 }
 
-void productController::newProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+/*
+    dönüş: addProcuts = 
+        1 ise tüm kayıtlar başarılı
+        2 ise hata veya hatalar var   
+*/
+void productController::addProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
     auto jsonReq = req->getJsonObject();
 
-    Json::Value jProduct = (*jsonReq)["newProduct"];
-    Json::Value jResp;
+    Json::Value jProducts = (*jsonReq)["addProducts"];
+    Json::Value jResp; 
+    Json::Value jBarcodes = Json::Value(Json::arrayValue);
+    
+    jResp["addProducts"] = 1; // ürün ekleme başarılı ise cevap = 1 başarılı.
 
-    pqxx::connection conn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
-    pqxx::work work(conn);
+    for(const auto &element : jProducts){
+        
+        sqlResult = work.exec_params("select * from productcards where barcode = $1", element["barcode"].asString());
+        if(sqlResult.size() > 0){
+            // barkod var ise kodlanacak...
+            jResp["addProducts"] = 2;
+            // var olan ürünün barkodunu cevaba false olarak kayıt etme
+            Json::Value val;
+            val[element["barcode"].asString()] = false;
+            jBarcodes.append(val);
+        }
+        else{
+            work.exec_params("insert into productcards(barcode, name, unit, category, subcategory, price, kdv, otv, producer) "
+                            "values($1, $2, $3, $4, $5, $6, $7, $8, $9)", element["barcode"].asString(), element["name"].asString(), element["unit"].asInt(), element["category"].asInt(), element["subcategory"].asInt(), element["price"].asDouble(), element["kdv"].asInt(), element["otv"].asInt(), element["producer"].asInt());
+            work.commit();
 
-    //barkod varmı kontrol
-    pqxx::result result = work.exec_params("select * from productcards where barcode = $1", jProduct["barcode"].asString());
+            // eklenen ürünün barkodunu cevaba true olarak kayıt etme.
+            Json::Value val;
+            val[element["barcode"].asString()] = true;
+            jBarcodes.append(val);
+        }
+    }
+    jResp["barcodes"] = jBarcodes;
 
-    if(result.size() > 0)
-    {
-        jResp["newProduct"] = "This barcode is assigned to another product";
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
+    auto resp = HttpResponse::newHttpJsonResponse(jResp);
+    resp->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(resp);
+}
+
+void productController::addSubCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    auto json = req->getJsonObject();
+    Json::Value jsonResponse;
+
+    string newSubCategoryName;
+    int parentID;
+    Json::Value jsonSubCategory = (*json)["addSubCategory"];
+
+    newSubCategoryName = jsonSubCategory["name"].asString();
+    parentID = jsonSubCategory["parentID"].asInt();
+
+    sqlResult = work.exec_params("select * from subcategories where parent = $1 and name = $2", parentID, newSubCategoryName);
+    if(sqlResult.size() > 0){
+        jsonResponse["addSubCategory"] = "error";
+        jsonResponse["Message"] = "Bu alt kategori zaten mevcut";
     }
     else{
         try
         {
-            work.exec_params("insert into productcards(barcode, name, unit, category, subcategory, price, kdv, otv, producer) "
-                            "values($1, $2, $3, $4, $5, $6, $7, $8, $9)", jProduct["barcode"].asString(), jProduct["name"].asString(), jProduct["unit"].asInt(), jProduct["category"].asInt(), jProduct["subcategory"].asInt(), jProduct["price"].asDouble(), jProduct["kdv"].asInt(), jProduct["otv"].asInt(), jProduct["producer"].asInt());
+            work.exec_params("insert into subcategories(parent, name) values($1, $2)", parentID, newSubCategoryName);
             work.commit();
-
-            jResp["newProduct"] = "ok";
+            jsonResponse["addSubCategory"] = "ok";
         }
-        catch(const pqxx::sql_error e)
+        catch(const pqxx::sql_error& e)
         {
-            jResp["newProduct"] = "error";
-            jResp["Error Message"] = e.what();
-            std::cerr << "SQL HATASI: " << e.what() << '\n';
+            LOG_INFO << e.what() << "\n";
+            jsonResponse["addSubCategory"] = "error";
+            jsonResponse["Message"] = e.what();
         }
     }
 
-    auto resp = HttpResponse::newHttpJsonResponse(jResp);
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
+    auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
+    resp->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(resp);
+}
+
+void productController::addCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    auto json = req->getJsonObject();
+    string newCategoryName = (*json)["addCategory"].asString();
+    
+    Json::Value jsonResponse;
+
+    sqlResult = work.exec_params("select * from categories where name = $1", newCategoryName);
+
+    if(sqlResult.size() > 0){
+        jsonResponse["addCategory"] = "error";
+        jsonResponse["Error Message"] = "This category already exists.";
+    }
+    else{
+        work.exec_params("insert into categories(name) values($1)", newCategoryName);
+        work.commit();
+        jsonResponse["addCategory"] = "ok";
+    }
+
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
+    auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
     resp->setContentTypeCode(CT_APPLICATION_JSON);
     callback(resp);
 }

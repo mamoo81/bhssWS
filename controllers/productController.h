@@ -18,7 +18,8 @@ class productController : public drogon::HttpController<productController>
     // ADD_METHOD_TO(productController::your_method_name, "/absolute/path/{1}/{2}/list", Get); // path is /absolute/path/{arg1}/{arg2}/list
     ADD_METHOD_TO(productController::sayHello, "/", Get);
     ADD_METHOD_TO(productController::getProduct, "/get/product/{barcode}", Get);
-    ADD_METHOD_TO(productController::addProduct, "/add/product", Post);
+    ADD_METHOD_TO(productController::addProduct, "/add/products", Post);
+    ADD_METHOD_TO(productController::deleteProducts, "delete/products", Post);
     ADD_METHOD_TO(productController::addSubCategory, "/add/subcategory", Post);
     ADD_METHOD_TO(productController::addCategory, "/add/category", Post);
 
@@ -29,6 +30,7 @@ class productController : public drogon::HttpController<productController>
     void sayHello(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void getProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, string pBarcode);
     void addProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void deleteProducts(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addSubCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
 };

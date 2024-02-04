@@ -3,6 +3,7 @@
 #include "jsoncpp/json/json.h"
 #include <string>
 #include <fmt/format.h> // string ifadelere argüman eklemek için. c++20 ile geldi bu özellik ama bunda çalıştıramadım. o yüzden fmt kütüphanesini kullandım. örnek; fmt::format("Merhaba {0}.", "Mehmet")
+#include <vector>
 
 pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
 pqxx::result sqlResult;
@@ -130,7 +131,7 @@ void productController::addSubCategory(const HttpRequestPtr& req, std::function<
         {
             LOG_INFO << e.what() << "\n";
             jsonResponse["addSubCategory"] = "error";
-            jsonResponse["Message"] = e.what();
+            jsonResponse["error_message"] = e.what();
         }
     }
 
@@ -151,7 +152,7 @@ void productController::addCategory(const HttpRequestPtr& req, std::function<voi
 
     if(sqlResult.size() > 0){
         jsonResponse["addCategory"] = "error";
-        jsonResponse["Error Message"] = "This category already exists.";
+        jsonResponse["error_message"] = "This category already exists.";
     }
     else{
         work.exec_params("insert into categories(name) values($1)", newCategoryName);
@@ -159,6 +160,42 @@ void productController::addCategory(const HttpRequestPtr& req, std::function<voi
         jsonResponse["addCategory"] = "ok";
     }
 
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
+    auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
+    resp->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(resp);
+}
+
+void productController::deleteProducts(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    auto json = req->getJsonObject();
+    Json::Value productIDs = Json::Value(Json::arrayValue);
+    productIDs = (*json)["deleteProducts"];
+
+    Json::Value jsonResponse;
+
+    string sqlQueryText = "delete from productcards where id in(";
+
+    int lastID = productIDs.size() -1;
+    for(const auto& id : productIDs){
+        sqlQueryText.append(id.asString());
+        if(id != productIDs[lastID]){
+            sqlQueryText.append(",");
+        }
+    }
+    sqlQueryText.append(")");
+    try
+    {
+        work.exec(sqlQueryText);
+        work.commit();
+        jsonResponse["deleteProducts"] = 1;
+    }
+    catch(const pqxx::sql_error& e)
+    {
+        jsonResponse["deleteProducts"] = 2; //hata veya hatalar var
+        jsonResponse["error_message"] = e.what();
+    }
+    
     LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
     resp->setContentTypeCode(CT_APPLICATION_JSON);

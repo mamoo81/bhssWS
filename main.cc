@@ -1,7 +1,10 @@
 #include <drogon/drogon.h>
 int main() {
     //Set HTTP listener address and port
-    drogon::app().addListener("0.0.0.0", 8189);
+    drogon::app()
+        .setThreadNum(4)
+        .enableRunAsDaemon()
+        .addListener("0.0.0.0", 8189);
     //Load config file
     //drogon::app().loadConfigFile("../config.json");
     //drogon::app().loadConfigFile("../config.yaml");

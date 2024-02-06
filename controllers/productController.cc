@@ -193,7 +193,7 @@ void productController::deleteProducts(const HttpRequestPtr& req, std::function<
     catch(const pqxx::sql_error& e)
     {
         jsonResponse["deleteProducts"] = 2; //hata veya hatalar var
-        jsonResponse["error_message"] = e.what();
+        // jsonResponse["error_message"] = e.what();
     }
     
     LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();

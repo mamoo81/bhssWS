@@ -1,0 +1,7 @@
+www.basat.dev {
+    redir https://basat.dev/{uri}
+}
+
+basat.dev {
+    reverse_proxy localhost:8189
+}

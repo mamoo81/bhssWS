@@ -17,11 +17,11 @@ class productController : public drogon::HttpController<productController>
     // METHOD_ADD(productController::your_method_name, "/{1}/{2}/list", Get); // path is /productController/{arg1}/{arg2}/list
     // ADD_METHOD_TO(productController::your_method_name, "/absolute/path/{1}/{2}/list", Get); // path is /absolute/path/{arg1}/{arg2}/list
     ADD_METHOD_TO(productController::sayHello, "/", Get);
-    ADD_METHOD_TO(productController::getProduct, "/get/product/{barcode}", Get);
-    ADD_METHOD_TO(productController::addProduct, "/add/products", Post);
-    ADD_METHOD_TO(productController::deleteProducts, "delete/products", Post);
-    ADD_METHOD_TO(productController::addSubCategory, "/add/subcategory", Post);
-    ADD_METHOD_TO(productController::addCategory, "/add/category", Post);
+    ADD_METHOD_TO(productController::getProduct, "/api/bhss/get/product/{barcode}", Get);
+    ADD_METHOD_TO(productController::addProduct, "/api/bhss/add/products", Post);
+    ADD_METHOD_TO(productController::deleteProducts, "/api/bhss/delete/products", Post);
+    ADD_METHOD_TO(productController::addSubCategory, "/api/bhss/add/subcategory", Post);
+    ADD_METHOD_TO(productController::addCategory, "/api/bhss/add/category", Post);
 
     METHOD_LIST_END
     // your declaration of processing function maybe like this:

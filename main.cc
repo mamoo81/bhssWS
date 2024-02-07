@@ -3,7 +3,7 @@ int main() {
     //Set HTTP listener address and port
     drogon::app()
         .setThreadNum(4)
-        .enableRunAsDaemon()
+        // .enableRunAsDaemon()
         .addListener("0.0.0.0", 8189);
     //Load config file
     //drogon::app().loadConfigFile("../config.json");

@@ -60,45 +60,63 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
 
 /*
     dönüş: addProcuts = 
-        1 ise tüm kayıtlar başarılı
+        1 ise tüm kayıt başarılı
         2 ise hata veya hatalar var   
 */
 void productController::addProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
-    auto jsonReq = req->getJsonObject();
+    // bu metoda request ile 2 dosya geliyor.
+    // biri "data.json" dosyası diğeri ürün resmi "resim.json"
+    // bunları işleyip geri dönüş yapar.
 
-    Json::Value jProducts = (*jsonReq)["addProducts"];
-    Json::Value jResp; 
-    Json::Value jBarcodes = Json::Value(Json::arrayValue);
-    
-    jResp["addProducts"] = 1; // ürün ekleme başarılı ise cevap = 1 başarılı.
+    Json::Value jsonResponse;
+    jsonResponse["addProduct"] = "ok";
 
-    for(const auto &element : jProducts){
-        
-        sqlResult = work.exec_params("select * from productcards where barcode = $1", element["barcode"].asString());
-        if(sqlResult.size() > 0){
-            // barkod var ise kodlanacak...
-            jResp["addProducts"] = 2;
-            // var olan ürünün barkodunu cevaba false olarak kayıt etme
-            Json::Value val;
-            val[element["barcode"].asString()] = false;
-            jBarcodes.append(val);
+    MultiPartParser fileUpload;
+    fileUpload.parse(req);
+
+    if(fileUpload.getFiles().size() != 0){
+
+        for(auto &file : fileUpload.getFiles()){
+
+            if(file.getFileType() == drogon::FileType::FT_CUSTOM){
+
+                // char datayı Json::Value nesnesine çevirme
+                // requeste gelen "data.json" dosyasını burada işliyorum.
+                Json::Value json;
+                Json::CharReaderBuilder builder;
+                std::istringstream jsonStream(file.fileData());
+                Json::parseFromStream(builder, jsonStream, &json, nullptr);
+                // char datayı çevirme bitti.
+
+                // veritabanına işleme başlangıç.
+                sqlResult = work.exec_params("select * from productcards where barcode = $1", json["barcode"].asString());
+                if(sqlResult.size() > 0){
+                    // barkod var ise kodlanacak...
+                    // var olan ürünün barkodunu cevaba false olarak kayıt etme
+                }
+                else{
+                    work.exec_params("insert into productcards(barcode, name, unit, category, subcategory, price, kdv, otv, producer) "
+                                    "values($1, $2, $3, $4, $5, $6, $7, $8, $9)", json["barcode"].asString(), json["name"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
+                    work.commit();
+
+                    // eklenen ürünün barkodunu cevaba true olarak kayıt etme.
+                }
+            }
+            else if(file.getFileType() == drogon::FileType::FT_IMAGE){
+                
+                file.saveAs(file.getFileName());
+            }
         }
-        else{
-            work.exec_params("insert into productcards(barcode, name, unit, category, subcategory, price, kdv, otv, producer) "
-                            "values($1, $2, $3, $4, $5, $6, $7, $8, $9)", element["barcode"].asString(), element["name"].asString(), element["unit"].asInt(), element["category"].asInt(), element["subcategory"].asInt(), element["price"].asDouble(), element["kdv"].asInt(), element["otv"].asInt(), element["producer"].asInt());
-            work.commit();
-
-            // eklenen ürünün barkodunu cevaba true olarak kayıt etme.
-            Json::Value val;
-            val[element["barcode"].asString()] = true;
-            jBarcodes.append(val);
-        }
+        jsonResponse["addProduct"] = "ok";
     }
-    jResp["barcodes"] = jBarcodes;
+    else{
+        jsonResponse["addProduct"] = "hata";
+        jsonResponse["error_message"] = "requestte hiç dosya yok.";
+    }
 
     LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
-    auto resp = HttpResponse::newHttpJsonResponse(jResp);
+    auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
     resp->setContentTypeCode(CT_APPLICATION_JSON);
     callback(resp);
 }
@@ -109,11 +127,10 @@ void productController::addSubCategory(const HttpRequestPtr& req, std::function<
     Json::Value jsonResponse;
 
     string newSubCategoryName;
-    int parentID;
     Json::Value jsonSubCategory = (*json)["addSubCategory"];
 
     newSubCategoryName = jsonSubCategory["name"].asString();
-    parentID = jsonSubCategory["parentID"].asInt();
+    int parentID = jsonSubCategory["parentID"].asInt();
 
     sqlResult = work.exec_params("select * from subcategories where parent = $1 and name = $2", parentID, newSubCategoryName);
     if(sqlResult.size() > 0){
@@ -200,4 +217,43 @@ void productController::deleteProducts(const HttpRequestPtr& req, std::function<
     auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
     resp->setContentTypeCode(CT_APPLICATION_JSON);
     callback(resp);
+}
+
+void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    Json::Value jsonResponse;
+    Json::Value jRoot;
+
+    sqlResult = work.exec("select c.id \"kategoriid\", c.name \"kategori\", s.name \"altkategori\" from categories c "
+                            "left join subcategories s on "
+                            "s.parent = c.id "
+                            "order by c.id");
+
+    if(sqlResult.size() != 0){
+
+        for(auto row : sqlResult){
+
+            std::string kategori = row[1].as<std::string>();
+            std::string altkategori;
+            if(row[2].is_null()){
+                altkategori = "";
+            }
+            else{
+                altkategori = row[2].as<std::string>();
+            }
+
+            // Eğer kategori daha önce eklenmediyse, JSONCpp nesnesine ekle
+            if (!jRoot.isMember(kategori)) {
+                jRoot[kategori] = Json::Value(Json::arrayValue);
+            }
+
+            // Alt kategoriyi JSONCpp nesnesine ekle
+            jRoot[kategori].append(altkategori);
+        }
+    }
+
+    jsonResponse = jRoot;
+    auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
+    response->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(response);
 }

@@ -1,7 +1,20 @@
 #include <drogon/drogon.h>
+#include <iostream>
+#include <locale.h>
+
+using namespace std;
+using namespace drogon;
+
 int main() {
+
+    setlocale(LC_ALL, "Turkish");
+
+    const char *homeDir = getenv("HOME");
+    std::string uploadDir = homeDir + string("/barcodeImages");
+
     //Set HTTP listener address and port
     drogon::app()
+        .setUploadPath(string(uploadDir))
         .setThreadNum(4)
         // .enableRunAsDaemon()
         .addListener("0.0.0.0", 8189);

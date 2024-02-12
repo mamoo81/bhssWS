@@ -18,10 +18,11 @@ class productController : public drogon::HttpController<productController>
     // ADD_METHOD_TO(productController::your_method_name, "/absolute/path/{1}/{2}/list", Get); // path is /absolute/path/{arg1}/{arg2}/list
     ADD_METHOD_TO(productController::sayHello, "/", Get);
     ADD_METHOD_TO(productController::getProduct, "/api/bhss/get/product/{barcode}", Get);
-    ADD_METHOD_TO(productController::addProduct, "/api/bhss/add/products", Post);
+    ADD_METHOD_TO(productController::addProduct, "/api/bhss/add/product", Post);
     ADD_METHOD_TO(productController::deleteProducts, "/api/bhss/delete/products", Post);
     ADD_METHOD_TO(productController::addSubCategory, "/api/bhss/add/subcategory", Post);
     ADD_METHOD_TO(productController::addCategory, "/api/bhss/add/category", Post);
+    ADD_METHOD_TO(productController::getCategoriesAndSubCategories, "/api/bhss/get/categoriesandsubcategories", Get);
 
     METHOD_LIST_END
     // your declaration of processing function maybe like this:
@@ -33,4 +34,5 @@ class productController : public drogon::HttpController<productController>
     void deleteProducts(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addSubCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void getCategoriesAndSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
 };

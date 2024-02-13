@@ -6,8 +6,7 @@
 #include <vector>
 
 pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
-pqxx::result sqlResult;
-pqxx::work work(sqlConn);
+
 
 void productController::sayHello(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
@@ -19,6 +18,8 @@ void productController::sayHello(const HttpRequestPtr& req, std::function<void(c
 
 void productController::getProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, std::string pBarcode)
 {
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
     sqlResult = work.exec_params("select id, barcode, name, unit, category, subcategory, price, kdv, otv, date, lastdate, producer from productcards where barcode = $1", pBarcode);
 
     Json::Value json;
@@ -68,6 +69,8 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
     // bu metoda request ile 2 dosya geliyor.
     // biri "data.json" dosyası diğeri ürün resmi "resim.json"
     // bunları işleyip geri dönüş yapar.
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
 
     Json::Value jsonResponse;
     jsonResponse["addProduct"] = "ok";
@@ -123,6 +126,9 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
 void productController::addSubCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
     auto json = req->getJsonObject();
     Json::Value jsonResponse;
 
@@ -133,6 +139,7 @@ void productController::addSubCategory(const HttpRequestPtr& req, std::function<
     int parentID = jsonSubCategory["parentID"].asInt();
 
     sqlResult = work.exec_params("select * from subcategories where parent = $1 and name = $2", parentID, newSubCategoryName);
+    work.commit();
     if(sqlResult.size() > 0){
         jsonResponse["addSubCategory"] = "error";
         jsonResponse["Message"] = "Bu alt kategori zaten mevcut";
@@ -160,6 +167,9 @@ void productController::addSubCategory(const HttpRequestPtr& req, std::function<
 
 void productController::addCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
     auto json = req->getJsonObject();
     string newCategoryName = (*json)["addCategory"].asString();
     
@@ -185,6 +195,9 @@ void productController::addCategory(const HttpRequestPtr& req, std::function<voi
 
 void productController::deleteProducts(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
     auto json = req->getJsonObject();
     Json::Value productIDs = Json::Value(Json::arrayValue);
     productIDs = (*json)["deleteProducts"];
@@ -221,14 +234,17 @@ void productController::deleteProducts(const HttpRequestPtr& req, std::function<
 
 void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::work work(sqlConn);
+
     Json::Value jsonResponse;
     Json::Value jRoot;
 
-    sqlResult = work.exec("select c.id \"kategoriid\", c.name \"kategori\", s.name \"altkategori\" from categories c "
+    string query = "select c.id, c.name, s.name from categories c "
                             "left join subcategories s on "
                             "s.parent = c.id "
-                            "order by c.id");
-
+                            "order by c.id";
+    pqxx::result sqlResult(work.exec(query));
+    
     if(sqlResult.size() != 0){
 
         for(auto row : sqlResult){
@@ -251,9 +267,42 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
             jRoot[kategori].append(altkategori);
         }
     }
+    else {
+        jsonResponse["Kategori_altkategori"] = "hata";
+        jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
+    }
 
     jsonResponse = jRoot;
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
+    response->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(response);
+}
+
+void productController::getUnits(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    Json::Value jRoot;
+
+    pqxx::work work(sqlConn);
+    string queryText = "select * from units order by id";
+    pqxx::result sqlResult(work.exec(queryText));
+
+    if(sqlResult.size() > 0){
+        for (const auto &row : sqlResult)
+        {
+            Json::Value jObject;
+            jObject["id"] = row[0].as<int>();
+            jObject["name"] = row[1].as<string>();
+            jRoot.append(jObject);
+        }
+    }
+    else{
+        jRoot["units"] = "error";
+        jRoot["hata_mesajı"] = "Hiç bir birim bulunamadı.";
+    }
+
+    Json::Value json = jRoot;
+
+    auto response = HttpResponse::newHttpJsonResponse(json);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
 }

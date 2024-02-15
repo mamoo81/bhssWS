@@ -237,34 +237,30 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
     pqxx::work work(sqlConn);
 
     Json::Value jsonResponse;
-    Json::Value jRoot;
 
     string query = "select c.id, c.name, s.name from categories c "
-                            "left join subcategories s on "
-                            "s.parent = c.id "
-                            "order by c.id";
+                    "left join subcategories s on "
+                    "s.parent = c.id "
+                    "order by c.id";
     pqxx::result sqlResult(work.exec(query));
-    
-    if(sqlResult.size() != 0){
 
-        for(auto row : sqlResult){
+    if(sqlResult.size() > 0){
 
+        for (const auto& row : sqlResult) {
+            int kategori_id = row[0].as<int>();
             std::string kategori = row[1].as<std::string>();
-            std::string altkategori;
-            if(row[2].is_null()){
-                altkategori = "";
-            }
-            else{
-                altkategori = row[2].as<std::string>();
-            }
+            std::string alt_kategori = row[2].is_null() ? "" : row[2].as<std::string>();
 
             // Eğer kategori daha önce eklenmediyse, JSONCpp nesnesine ekle
-            if (!jRoot.isMember(kategori)) {
-                jRoot[kategori] = Json::Value(Json::arrayValue);
+            if (!jsonResponse.isMember(kategori)) {
+                jsonResponse[kategori] = Json::Value(Json::arrayValue);
             }
 
             // Alt kategoriyi JSONCpp nesnesine ekle
-            jRoot[kategori].append(altkategori);
+            Json::Value alt_kategori_obj;
+            alt_kategori_obj["id"] = kategori_id;
+            alt_kategori_obj["name"] = alt_kategori;
+            jsonResponse[kategori].append(alt_kategori_obj);
         }
     }
     else {
@@ -272,7 +268,6 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
         jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
     }
 
-    jsonResponse = jRoot;
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);

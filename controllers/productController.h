@@ -17,13 +17,13 @@ class productController : public drogon::HttpController<productController>
     // METHOD_ADD(productController::your_method_name, "/{1}/{2}/list", Get); // path is /productController/{arg1}/{arg2}/list
     // ADD_METHOD_TO(productController::your_method_name, "/absolute/path/{1}/{2}/list", Get); // path is /absolute/path/{arg1}/{arg2}/list
     ADD_METHOD_TO(productController::sayHello, "/", Get);
-    ADD_METHOD_TO(productController::getProduct, "/api/bhss/get/product/{barcode}", Get);
-    ADD_METHOD_TO(productController::addProduct, "/api/bhss/add/product", Post);
-    ADD_METHOD_TO(productController::deleteProducts, "/api/bhss/delete/products", Post);
-    ADD_METHOD_TO(productController::addSubCategory, "/api/bhss/add/subcategory", Post);
-    ADD_METHOD_TO(productController::addCategory, "/api/bhss/add/category", Post);
-    ADD_METHOD_TO(productController::getCategoriesAndSubCategories, "/api/bhss/get/categoriesandsubcategories", Get);
-    ADD_METHOD_TO(productController::getUnits, "/api/bhss/get/units", Get);
+    ADD_METHOD_TO(productController::getProduct, "/bhss/get/product/{barcode}", Get);
+    ADD_METHOD_TO(productController::addProduct, "/bhss/add/product", Post);
+    ADD_METHOD_TO(productController::deleteProducts, "/bhss/delete/product", Post);
+    ADD_METHOD_TO(productController::addSubCategory, "/bhss/add/subcategory", Post);
+    ADD_METHOD_TO(productController::addCategory, "/bhss/add/category", Post);
+    ADD_METHOD_TO(productController::getCategoriesAndSubCategories, "/bhss/get/categoriesandsubcategories", Get);
+    ADD_METHOD_TO(productController::getUnits, "/bhss/get/units", Get);
 
     METHOD_LIST_END
     // your declaration of processing function maybe like this:

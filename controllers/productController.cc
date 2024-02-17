@@ -97,13 +97,14 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                 if(sqlResult.size() > 0){
                     // barkod var ise kodlanacak...
                     // var olan ürünün barkodunu cevaba false olarak kayıt etme
+
+                    jsonResponse["addProduct"] = "hata";
+                    jsonResponse["error_message"] = "Bu barkod başka bir ürüne tanımlı.";
                 }
                 else{
                     work.exec_params("insert into productcards(barcode, name, unit, category, subcategory, price, kdv, otv, producer) "
                                     "values($1, $2, $3, $4, $5, $6, $7, $8, $9)", json["barcode"].asString(), json["name"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
                     work.commit();
-
-                    // eklenen ürünün barkodunu cevaba true olarak kayıt etme.
                 }
             }
             else if(file.getFileType() == drogon::FileType::FT_IMAGE){
@@ -238,35 +239,53 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
 
     Json::Value jsonResponse;
 
-    string query = "select c.id, c.name, s.name from categories c "
+    string query = "select c.id, c.name, s.id, s.name from categories c "
                     "left join subcategories s on "
                     "s.parent = c.id "
                     "order by c.id";
     pqxx::result sqlResult(work.exec(query));
 
-    if(sqlResult.size() > 0){
+    Json::Value root;
+    
+    int currentCategoryID = -1;
+    Json::Value currentCategory;
 
-        for (const auto& row : sqlResult) {
+    if(sqlResult.size() > 0){
+        
+        for(const auto &row : sqlResult){
+
             int kategori_id = row[0].as<int>();
             std::string kategori = row[1].as<std::string>();
-            std::string alt_kategori = row[2].is_null() ? "" : row[2].as<std::string>();
+            int alt_kategori_id = row[2].as<int>();
+            std::string alt_kategori_name = row[3].is_null() ? "" : row[3].as<std::string>();
 
-            // Eğer kategori daha önce eklenmediyse, JSONCpp nesnesine ekle
-            if (!jsonResponse.isMember(kategori)) {
-                jsonResponse[kategori] = Json::Value(Json::arrayValue);
-            }
-
-            // Alt kategoriyi JSONCpp nesnesine ekle
-            Json::Value alt_kategori_obj;
-            alt_kategori_obj["id"] = kategori_id;
-            alt_kategori_obj["name"] = alt_kategori;
-            jsonResponse[kategori].append(alt_kategori_obj);
         }
+
     }
-    else {
-        jsonResponse["Kategori_altkategori"] = "hata";
-        jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
-    }
+
+    // if(sqlResult.size() > 0){
+
+    //     for (const auto& row : sqlResult) {
+    //         int kategori_id = row[0].as<int>();
+    //         std::string kategori = row[1].as<std::string>();
+    //         std::string alt_kategori = row[3].is_null() ? "" : row[3].as<std::string>();
+
+    //         // Eğer kategori daha önce eklenmediyse, JSONCpp nesnesine ekle
+    //         if (!jsonResponse.isMember(kategori)) {
+    //             jsonResponse[kategori] = Json::Value(Json::arrayValue);
+    //         }
+
+    //         // Alt kategoriyi JSONCpp nesnesine ekle
+    //         Json::Value alt_kategori_obj;
+    //         alt_kategori_obj["id"] = kategori_id;
+    //         alt_kategori_obj["name"] = alt_kategori;
+    //         jsonResponse[kategori].append(alt_kategori_obj);
+    //     }
+    // }
+    // else {
+    //     jsonResponse["Kategori_altkategori"] = "hata";
+    //     jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
+    // }
 
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);

@@ -1,7 +1,13 @@
-www.basat.dev {
+www.api.basat.dev {
     redir https://basat.dev/{uri}
 }
 
-basat.dev {
+api.basat.dev {
     reverse_proxy localhost:8189
+}
+
+img.basat.dev {
+    root * /root/barcodeimages
+    encode gzip
+    file_server
 }

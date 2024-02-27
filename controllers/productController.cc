@@ -239,53 +239,45 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
 
     Json::Value jsonResponse;
 
-    string query = "select c.id, c.name, s.id, s.name from categories c "
-                    "left join subcategories s on "
-                    "s.parent = c.id "
-                    "order by c.id";
+    string query = "select id, name from categories";
     pqxx::result sqlResult(work.exec(query));
 
-    Json::Value root;
-    
-    int currentCategoryID = -1;
-    Json::Value currentCategory;
-
     if(sqlResult.size() > 0){
-        
+
+        Json::Value jsonRoot;
+
         for(const auto &row : sqlResult){
 
-            int kategori_id = row[0].as<int>();
-            std::string kategori = row[1].as<std::string>();
-            int alt_kategori_id = row[2].as<int>();
-            std::string alt_kategori_name = row[3].is_null() ? "" : row[3].as<std::string>();
+            Json::Value category;
+            
+            category["id"] = row[0].as<int>();
+            category["name"] = row[1].as<std::string>();
+            category["sub_categories"] = Json::Value(Json::arrayValue);
 
+            string query = "select id, name from subcategories where parent = $1";
+            pqxx::result sqlResult(work.exec_params(query, row[0].as<int>()));
+
+            if(sqlResult.size() > 0){
+
+                for(const auto &row : sqlResult){
+
+                    Json::Value subCategory;
+                    subCategory["id"] = row[0].as<int>();
+                    subCategory["name"] = row[1].as<std::string>();
+                    category["sub_categories"].append(subCategory);
+                }
+            }
+
+            jsonRoot.append(category);
         }
 
+        jsonResponse = jsonRoot;
+
     }
-
-    // if(sqlResult.size() > 0){
-
-    //     for (const auto& row : sqlResult) {
-    //         int kategori_id = row[0].as<int>();
-    //         std::string kategori = row[1].as<std::string>();
-    //         std::string alt_kategori = row[3].is_null() ? "" : row[3].as<std::string>();
-
-    //         // Eğer kategori daha önce eklenmediyse, JSONCpp nesnesine ekle
-    //         if (!jsonResponse.isMember(kategori)) {
-    //             jsonResponse[kategori] = Json::Value(Json::arrayValue);
-    //         }
-
-    //         // Alt kategoriyi JSONCpp nesnesine ekle
-    //         Json::Value alt_kategori_obj;
-    //         alt_kategori_obj["id"] = kategori_id;
-    //         alt_kategori_obj["name"] = alt_kategori;
-    //         jsonResponse[kategori].append(alt_kategori_obj);
-    //     }
-    // }
-    // else {
-    //     jsonResponse["Kategori_altkategori"] = "hata";
-    //     jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
-    // }
+    else {
+        jsonResponse["Kategori_altkategori"] = "hata";
+        jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
+    }
 
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);

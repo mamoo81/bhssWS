@@ -23,6 +23,8 @@ class productController : public drogon::HttpController<productController>
     ADD_METHOD_TO(productController::addSubCategory, "/bhss/add/subcategory", Post);
     ADD_METHOD_TO(productController::addCategory, "/bhss/add/category", Post);
     ADD_METHOD_TO(productController::getCategoriesAndSubCategories, "/bhss/get/categoriesandsubcategories", Get);
+    ADD_METHOD_TO(productController::getCategories, "/bhss/get/categories", Get);
+    ADD_METHOD_TO(productController::getSubCategories, "/bhss/get/subcategories", Get);
     ADD_METHOD_TO(productController::getUnits, "/bhss/get/units", Get);
 
     METHOD_LIST_END
@@ -36,5 +38,7 @@ class productController : public drogon::HttpController<productController>
     void addSubCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void getCategoriesAndSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void getCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void getSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void getUnits(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
 };

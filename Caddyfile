@@ -7,7 +7,7 @@ api.basat.dev {
 }
 
 img.basat.dev {
-    root * /root/barcodeimages
+    root * /root/product-images
     encode gzip
     file_server
 }

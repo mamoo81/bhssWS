@@ -10,7 +10,7 @@ int main() {
     setlocale(LC_ALL, "Turkish");
 
     const char *homeDir = getenv("HOME");
-    std::string uploadDir = homeDir + string("/barcodeimages");
+    std::string uploadDir = homeDir + string("/product-images");
 
     //Set HTTP listener address and port
     drogon::app()

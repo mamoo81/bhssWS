@@ -4,9 +4,9 @@
 #include <string>
 #include <fmt/format.h> // string ifadelere argüman eklemek için. c++20 ile geldi bu özellik ama bunda çalıştıramadım. o yüzden fmt kütüphanesini kullandım. örnek; fmt::format("Merhaba {0}.", "Mehmet")
 #include <vector>
+#include <openssl/sha.h>
 
 pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
-
 
 void productController::sayHello(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
@@ -80,13 +80,14 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
     if(fileUpload.getFiles().size() != 0){
 
+        Json::Value json;
+
         for(auto &file : fileUpload.getFiles()){
 
-            if(file.getFileType() == drogon::FileType::FT_CUSTOM){
+            if(file.getFileType() == drogon::FileType::FT_DOCUMENT){
 
                 // char datayı Json::Value nesnesine çevirme
-                // requeste gelen "data.json" dosyasını burada işliyorum.
-                Json::Value json;
+                // requeste gelen "product.json" dosyasını burada işliyorum.
                 Json::CharReaderBuilder builder;
                 std::istringstream jsonStream(file.fileData());
                 Json::parseFromStream(builder, jsonStream, &json, nullptr);
@@ -102,14 +103,23 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                     jsonResponse["error_message"] = "Bu barkod başka bir ürüne tanımlı.";
                 }
                 else{
-                    work.exec_params("insert into productcards(barcode, name, unit, category, subcategory, price, kdv, otv, producer) "
-                                    "values($1, $2, $3, $4, $5, $6, $7, $8, $9)", json["barcode"].asString(), json["name"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
+                    work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
+                                    "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", json["barcode"].asString(), json["name"].asString(), json["fullname"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
                     work.commit();
                 }
             }
             else if(file.getFileType() == drogon::FileType::FT_IMAGE){
                 
-                file.saveAs(file.getFileName());
+                string fileMD5 = file.getMd5();
+                string newFileName = fileMD5 + "." + std::string(file.getFileExtension());
+                file.saveAs(newFileName);
+
+                //veritabanına da bu bilgileri kaydedelim.
+                /*
+                    burayı iyileştir. daha önce kaydedilmişmi vb. şeyler.
+                */
+                work.exec_params("insert into images (barcode, hash) values($1, $2)", json["barcode"].asString(), fileMD5);
+                work.commit();
             }
         }
         jsonResponse["addProduct"] = "ok";
@@ -309,6 +319,73 @@ void productController::getUnits(const HttpRequestPtr& req, std::function<void(c
     Json::Value json = jRoot;
 
     auto response = HttpResponse::newHttpJsonResponse(json);
+    response->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(response);
+}
+
+void productController::getCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    pqxx::work work(sqlConn);
+
+    Json::Value jsonResponse;
+
+    string query = "select id, name from categories";
+    pqxx::result sqlResult(work.exec(query));
+
+    if(sqlResult.size() > 0){
+
+        Json::Value jsonRoot;
+
+        for(const auto& row : sqlResult){
+            
+            Json::Value categories;
+            categories["id"] = row[0].as<int>();
+            categories["name"] = row[1].as<string>();
+            jsonRoot.append(categories);
+        }
+
+        jsonResponse = jsonRoot;
+    }
+    else {
+        jsonResponse["kategoriler"] = "hata";
+        jsonResponse["hata_mesajı"] = "Her hangi bir kategori bulunamadı.";
+    }
+
+    auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
+    response->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(response);
+}
+
+void productController::getSubCategories( const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    pqxx::work work(sqlConn);
+
+    Json::Value jsonResponse;
+
+    string query = "select id, parent, name from subcategories";
+    pqxx::result sqlResult(work.exec(query));
+
+    if(sqlResult.size() > 0){
+
+        Json::Value jsonRoot;
+
+        for(const auto& row : sqlResult){
+            
+            Json::Value subcategories;
+            subcategories["id"] = row[0].as<int>();
+            subcategories["parent"] = row[1].as<int>();
+            subcategories["name"] = row[2].as<string>();
+            jsonRoot.append(subcategories);
+        }
+
+        jsonResponse = jsonRoot;
+    }
+    else {
+        jsonResponse["altkategoriler"] = "hata";
+        jsonResponse["hata_mesajı"] = "Her hangi bir altkategori bulunamadı.";
+    }
+
+    auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
 }

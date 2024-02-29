@@ -85,6 +85,8 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
         for(auto &file : fileUpload.getFiles()){
 
+            LOG_DEBUG << "dosya adı: " << file.getFileName();
+
             if(file.getFileType() == drogon::FileType::FT_DOCUMENT){
 
                 // char datayı Json::Value nesnesine çevirme
@@ -107,6 +109,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                     work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
                                     "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", json["barcode"].asString(), json["name"].asString(), json["fullname"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
                     work.commit();
+                    
                     jsonResponse["addProduct"] = "ok";
                 }
             }

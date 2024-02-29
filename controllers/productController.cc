@@ -68,13 +68,13 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
 void productController::addProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
     // bu metoda request ile 2 dosya geliyor.
-    // biri "data.json" dosyası diğeri ürün resmi "resim.json"
+    // biri "product.json" dosyası diğeri ürün resmi "resim.json"
     // bunları işleyip geri dönüş yapar.
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
 
     Json::Value jsonResponse;
-    jsonResponse["addProduct"] = "ok";
+    // jsonResponse["addProduct"] = "ok";
 
     MultiPartParser fileUpload;
     fileUpload.parse(req);
@@ -107,6 +107,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                     work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
                                     "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", json["barcode"].asString(), json["name"].asString(), json["fullname"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
                     work.commit();
+                    jsonResponse["addProduct"] = "ok";
                 }
             }
             else if(file.getFileType() == drogon::FileType::FT_IMAGE){
@@ -123,7 +124,6 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                 work.commit();
             }
         }
-        jsonResponse["addProduct"] = "ok";
     }
     else{
         jsonResponse["addProduct"] = "hata";

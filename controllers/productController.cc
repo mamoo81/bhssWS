@@ -89,6 +89,8 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
             if(file.getFileType() == drogon::FileType::FT_DOCUMENT){
 
+                LOG_DEBUG << "DOSYA_DOCUMENT GİRDİ";
+
                 // char datayı Json::Value nesnesine çevirme
                 // requeste gelen "product.json" dosyasını burada işliyorum.
                 Json::CharReaderBuilder builder;
@@ -106,10 +108,18 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                     jsonResponse["error_message"] = "Bu barkod başka bir ürüne tanımlı.";
                 }
                 else{
-                    work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
+                    try
+                    {
+                        work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
                                     "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", json["barcode"].asString(), json["name"].asString(), json["fullname"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
-                    work.commit();
+                    }
+                    catch(const pqxx::sql_error& e)
+                    {
+                        std::cerr << e.what() << '\n';
+                    }
                     
+                    work.commit();
+
                     jsonResponse["addProduct"] = "ok";
                 }
             }

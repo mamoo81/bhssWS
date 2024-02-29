@@ -20,7 +20,10 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
 {
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
-    sqlResult = work.exec_params("select id, barcode, name, fullname, unit, category, subcategory, price, kdv, otv, date, lastdate, producer from productcards where barcode = $1", pBarcode);
+    sqlResult = work.exec_params("select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
+                                    "left join images i on "
+                                    "i.barcode = p.barcode "
+                                    "where barcode = $1", pBarcode);
 
     Json::Value json;
 
@@ -47,6 +50,7 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
             jProduct["date"] = pqxx::to_string(row[10]);
             jProduct["lastdate"] = pqxx::to_string(row[11]);
             jProduct["producer"] = row[12].as<int>();
+            jProduct["image-hash"] = row[13].as<string>();
 
             Json::Value jVal;
             jVal["getProduct"] = jProduct;
@@ -85,13 +89,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
         for(auto &file : fileUpload.getFiles()){
 
-            LOG_DEBUG << "dosya adı: " << file.getFileName();
-            LOG_DEBUG << file.getItemName();
-            LOG_DEBUG << file.getFileType();
-
             if(file.getFileType() == FileType::FT_CUSTOM){
-
-                LOG_DEBUG << "DOSYA_DOCUMENT GİRDİ";
 
                 // char datayı Json::Value nesnesine çevirme
                 // requeste gelen "product.json" dosyasını burada işliyorum.

@@ -20,7 +20,7 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
 {
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
-    sqlResult = work.exec_params("select id, barcode, name, unit, category, subcategory, price, kdv, otv, date, lastdate, producer from productcards where barcode = $1", pBarcode);
+    sqlResult = work.exec_params("select id, barcode, name, fullname, unit, category, subcategory, price, kdv, otv, date, lastdate, producer from productcards where barcode = $1", pBarcode);
 
     Json::Value json;
 
@@ -37,15 +37,16 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
             jProduct["id"] = row[0].as<int>();
             jProduct["barcode"] = row[1].as<string>();
             jProduct["name"] = row[2].as<string>();
-            jProduct["unit"] = row[3].as<int>();
-            jProduct["category"] = row[4].as<int>();
-            jProduct["subcategory"] = row[5].as<int>();
-            jProduct["price"] = row[6].as<double>();
-            jProduct["kdv"] = row[7].as<int>();
-            jProduct["otv"] = row[8].as<int>();
-            jProduct["date"] = pqxx::to_string(row[9]);
-            jProduct["lastdate"] = pqxx::to_string(row[10]);
-            jProduct["producer"] = row[11].as<int>();
+            jProduct["fullname"] = row[3].as<string>();
+            jProduct["unit"] = row[4].as<int>();
+            jProduct["category"] = row[5].as<int>();
+            jProduct["subcategory"] = row[6].as<int>();
+            jProduct["price"] = row[7].as<double>();
+            jProduct["kdv"] = row[8].as<int>();
+            jProduct["otv"] = row[9].as<int>();
+            jProduct["date"] = pqxx::to_string(row[10]);
+            jProduct["lastdate"] = pqxx::to_string(row[11]);
+            jProduct["producer"] = row[12].as<int>();
 
             Json::Value jVal;
             jVal["getProduct"] = jProduct;

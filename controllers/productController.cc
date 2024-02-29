@@ -89,7 +89,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
             LOG_DEBUG << file.getItemName();
             LOG_DEBUG << file.getFileType();
 
-            if(file.getFileType() == FileType::FT_DOCUMENT){
+            if(file.getFileType() == FileType::FT_CUSTOM){
 
                 LOG_DEBUG << "DOSYA_DOCUMENT GİRDİ";
 

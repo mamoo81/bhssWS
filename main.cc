@@ -17,6 +17,7 @@ int main() {
         .setUploadPath(string(uploadDir))
         .setThreadNum(4)
         // .enableRunAsDaemon()
+        .setFileTypes({"json", "jpg"})
         .addListener("0.0.0.0", 8189);
     //Load config file
     //drogon::app().loadConfigFile("../config.json");

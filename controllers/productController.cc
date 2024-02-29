@@ -23,7 +23,7 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
     sqlResult = work.exec_params("select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
                                     "left join images i on "
                                     "i.barcode = p.barcode "
-                                    "where barcode = $1", pBarcode);
+                                    "where p.barcode = $1", pBarcode);
 
     Json::Value json;
 

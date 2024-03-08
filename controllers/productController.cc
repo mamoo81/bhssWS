@@ -292,8 +292,8 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
 
     }
     else {
-        jsonResponse["Kategori_altkategori"] = "hata";
-        jsonResponse["hata_mesajı"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
+        jsonResponse["categoriesandsubcategories"] = Json::nullValue;
+        jsonResponse["error_message"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
     }
 
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
@@ -310,17 +310,20 @@ void productController::getUnits(const HttpRequestPtr& req, std::function<void(c
     pqxx::result sqlResult(work.exec(queryText));
 
     if(sqlResult.size() > 0){
+
+        Json::Value unitsAArray = Json::Value(Json::arrayValue);
         for (const auto &row : sqlResult)
         {
             Json::Value jObject;
             jObject["id"] = row[0].as<int>();
             jObject["name"] = row[1].as<string>();
-            jRoot.append(jObject);
+            unitsAArray.append(jObject);
         }
+        jRoot["units"] = unitsAArray;
     }
     else{
-        jRoot["units"] = "error";
-        jRoot["hata_mesajı"] = "Hiç bir birim bulunamadı.";
+        jRoot["units"] = Json::nullValue;
+        jRoot["error_message"] = "Hiç bir birim bulunamadı.";
     }
 
     Json::Value json = jRoot;
@@ -340,22 +343,21 @@ void productController::getCategories(const HttpRequestPtr& req, std::function<v
     pqxx::result sqlResult(work.exec(query));
 
     if(sqlResult.size() > 0){
-
-        Json::Value jsonRoot;
-
+        
+        Json::Value categories = Json::Value(Json::arrayValue);
         for(const auto& row : sqlResult){
             
-            Json::Value categories;
-            categories["id"] = row[0].as<int>();
-            categories["name"] = row[1].as<string>();
-            jsonRoot.append(categories);
+            Json::Value category;
+            category["id"] = row[0].as<int>();
+            category["name"] = row[1].as<string>();
+            categories.append(category);
         }
 
-        jsonResponse = jsonRoot;
+        jsonResponse["categories"] = categories;
     }
     else {
-        jsonResponse["kategoriler"] = "hata";
-        jsonResponse["hata_mesajı"] = "Her hangi bir kategori bulunamadı.";
+        jsonResponse["categories"] = Json::nullValue;
+        jsonResponse["error_message"] = "Her hangi bir kategori bulunamadı.";
     }
 
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
@@ -374,22 +376,22 @@ void productController::getSubCategories( const HttpRequestPtr& req, std::functi
 
     if(sqlResult.size() > 0){
 
-        Json::Value jsonRoot;
+        Json::Value subCategories = Json::Value(Json::arrayValue);
 
         for(const auto& row : sqlResult){
             
-            Json::Value subcategories;
-            subcategories["id"] = row[0].as<int>();
-            subcategories["parent"] = row[1].as<int>();
-            subcategories["name"] = row[2].as<string>();
-            jsonRoot.append(subcategories);
+            Json::Value subcategory;
+            subcategory["id"] = row[0].as<int>();
+            subcategory["parent"] = row[1].as<int>();
+            subcategory["name"] = row[2].as<string>();
+            subCategories.append(subcategory);
         }
 
-        jsonResponse = jsonRoot;
+        jsonResponse["subcategories"] = subCategories;
     }
     else {
-        jsonResponse["altkategoriler"] = "hata";
-        jsonResponse["hata_mesajı"] = "Her hangi bir altkategori bulunamadı.";
+        jsonResponse["subcategories"] = Json::nullValue;
+        jsonResponse["error_message"] = "Her hangi bir altkategori bulunamadı.";
     }
 
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);

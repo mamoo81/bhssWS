@@ -296,6 +296,7 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
         jsonResponse["error_message"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
     }
 
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
@@ -328,6 +329,7 @@ void productController::getUnits(const HttpRequestPtr& req, std::function<void(c
 
     Json::Value json = jRoot;
 
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto response = HttpResponse::newHttpJsonResponse(json);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
@@ -360,6 +362,7 @@ void productController::getCategories(const HttpRequestPtr& req, std::function<v
         jsonResponse["error_message"] = "Her hangi bir kategori bulunamadı.";
     }
 
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
@@ -394,6 +397,7 @@ void productController::getSubCategories( const HttpRequestPtr& req, std::functi
         jsonResponse["error_message"] = "Her hangi bir altkategori bulunamadı.";
     }
 
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);

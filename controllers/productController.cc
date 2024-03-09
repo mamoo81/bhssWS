@@ -260,27 +260,26 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
     pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::work work(sqlConn);
 
-    Json::Value jsonResponse;
-
     string query = "select id, name from categories";
     pqxx::result sqlResult(work.exec(query));
 
+    Json::Value json;
+
     if(sqlResult.size() > 0){
 
-        Json::Value jsonRoot;
-
+        Json::Value categories = Json::Value(Json::arrayValue);
         for(const auto &row : sqlResult){
 
             Json::Value category;
-            
             category["id"] = row[0].as<int>();
             category["name"] = row[1].as<std::string>();
-            category["sub_categories"] = Json::Value(Json::arrayValue);
 
             string query = "select id, name from subcategories where parent = $1";
             pqxx::result sqlResult(work.exec_params(query, row[0].as<int>()));
 
             if(sqlResult.size() > 0){
+
+                category["sub_categories"] = Json::Value(Json::arrayValue);
 
                 for(const auto &row : sqlResult){
 
@@ -290,20 +289,21 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
                     category["sub_categories"].append(subCategory);
                 }
             }
+            else{
+                category["sub_categories"] = Json::Value(Json::arrayValue);
+            }
 
-            jsonRoot.append(category);
+            categories.append(category);
         }
-
-        jsonResponse = jsonRoot;
-
+        json["categoriesandsubcategories"] = categories;
     }
     else {
-        jsonResponse["categoriesandsubcategories"] = Json::nullValue;
-        jsonResponse["error_message"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
+        json["categoriesandsubcategories"] = Json::nullValue;
+        json["error_message"] = "Her hangi bir kategori veya alt kategori bulunamadı.";
     }
 
     LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
-    auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
+    auto response = HttpResponse::newHttpJsonResponse(json);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
 }

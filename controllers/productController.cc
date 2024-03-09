@@ -6,7 +6,7 @@
 #include <vector>
 #include <openssl/sha.h>
 
-pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+
 
 void productController::sayHello(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
@@ -18,6 +18,7 @@ void productController::sayHello(const HttpRequestPtr& req, std::function<void(c
 
 void productController::getProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, std::string pBarcode)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
     sqlResult = work.exec_params("select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
@@ -71,6 +72,7 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
 */
 void productController::addProduct(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     // bu metoda request ile 2 dosya geliyor.
     // biri "product.json" dosyası diğeri ürün resmi "resim.json"
     // bunları işleyip geri dönüş yapar.
@@ -144,6 +146,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
 void productController::addSubCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
 
@@ -185,6 +188,7 @@ void productController::addSubCategory(const HttpRequestPtr& req, std::function<
 
 void productController::addCategory(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
 
@@ -213,6 +217,7 @@ void productController::addCategory(const HttpRequestPtr& req, std::function<voi
 
 void productController::deleteProducts(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::result sqlResult;
     pqxx::work work(sqlConn);
 
@@ -252,6 +257,7 @@ void productController::deleteProducts(const HttpRequestPtr& req, std::function<
 
 void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::work work(sqlConn);
 
     Json::Value jsonResponse;
@@ -304,11 +310,13 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
 
 void productController::getUnits(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
-    Json::Value jRoot;
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
 
     pqxx::work work(sqlConn);
     string queryText = "select * from units order by id";
     pqxx::result sqlResult(work.exec(queryText));
+
+    Json::Value jRoot;
 
     if(sqlResult.size() > 0){
 
@@ -337,12 +345,13 @@ void productController::getUnits(const HttpRequestPtr& req, std::function<void(c
 
 void productController::getCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::work work(sqlConn);
-
-    Json::Value jsonResponse;
 
     string query = "select id, name from categories";
     pqxx::result sqlResult(work.exec(query));
+
+    Json::Value jsonResponse;
 
     if(sqlResult.size() > 0){
         
@@ -370,12 +379,13 @@ void productController::getCategories(const HttpRequestPtr& req, std::function<v
 
 void productController::getSubCategories( const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
     pqxx::work work(sqlConn);
-
-    Json::Value jsonResponse;
 
     string query = "select id, parent, name from subcategories";
     pqxx::result sqlResult(work.exec(query));
+
+    Json::Value jsonResponse;
 
     if(sqlResult.size() > 0){
 

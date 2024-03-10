@@ -279,18 +279,18 @@ void productController::getCategoriesAndSubCategories(const HttpRequestPtr& req,
 
             if(sqlResult.size() > 0){
 
-                category["sub_categories"] = Json::Value(Json::arrayValue);
+                category["subcategories"] = Json::Value(Json::arrayValue);
 
                 for(const auto &row : sqlResult){
 
                     Json::Value subCategory;
                     subCategory["id"] = row[0].as<int>();
                     subCategory["name"] = row[1].as<std::string>();
-                    category["sub_categories"].append(subCategory);
+                    category["subcategories"].append(subCategory);
                 }
             }
             else{
-                category["sub_categories"] = Json::Value(Json::arrayValue);
+                category["subcategories"] = Json::Value(Json::arrayValue);
             }
 
             categories.append(category);

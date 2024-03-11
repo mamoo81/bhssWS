@@ -51,8 +51,12 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
             jProduct["date"] = pqxx::to_string(row[10]);
             jProduct["lastdate"] = pqxx::to_string(row[11]);
             jProduct["producer"] = row[12].as<int>();
-            jProduct["image-hash"] = row[13].as<string>();
-
+            if(!row[13].is_null()){
+                jProduct["image-hash"] = row[13].as<string>();
+            }
+            else{
+                jProduct["image-hash"] = Json::nullValue;
+            }
             Json::Value jVal;
             jVal["getProduct"] = jProduct;
             json = jVal;
@@ -385,7 +389,7 @@ void productController::getSubCategories( const HttpRequestPtr& req, std::functi
     string query = "select id, parent, name from subcategories";
     pqxx::result sqlResult(work.exec(query));
 
-    Json::Value jsonResponse;
+    Json::Value json;
 
     if(sqlResult.size() > 0){
 
@@ -400,15 +404,49 @@ void productController::getSubCategories( const HttpRequestPtr& req, std::functi
             subCategories.append(subcategory);
         }
 
-        jsonResponse["subcategories"] = subCategories;
+        json["subcategories"] = subCategories;
     }
     else {
-        jsonResponse["subcategories"] = Json::nullValue;
-        jsonResponse["error_message"] = "Her hangi bir altkategori bulunamadı.";
+        json["subcategories"] = Json::nullValue;
+        json["error_message"] = "Her hangi bir altkategori bulunamadı.";
     }
 
     LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
-    auto response = HttpResponse::newHttpJsonResponse(jsonResponse);
+    auto response = HttpResponse::newHttpJsonResponse(json);
+    response->setContentTypeCode(CT_APPLICATION_JSON);
+    callback(response);
+}
+
+void productController::getProducers(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+    pqxx::work work(sqlConn);
+
+    string query = "select id, name from producers";
+    pqxx::result sqlResult(work.exec(query));
+
+    Json::Value json;
+
+    if(sqlResult.size() > 0){
+        Json::Value producers = Json::Value(Json::arrayValue);
+
+        for(const auto& row : sqlResult){
+            
+            Json::Value producer;
+            producer["id"] = row[0].as<int>();
+            producer["name"] = row[1].as<string>();
+            producers.append(producer);
+        }
+
+        json["producers"] = producers;
+    }
+    else{
+        json["producers"] = Json::nullValue;
+        json["error_message"] = "Herhangi bir üretici bulunamadı.";
+    }
+
+    LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
+    auto response = HttpResponse::newHttpJsonResponse(json);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
 }

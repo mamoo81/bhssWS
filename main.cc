@@ -12,6 +12,8 @@ int main() {
     const char *homeDir = getenv("HOME");
     std::string uploadDir = homeDir + string("/product-images");
 
+    cout << "Drogon 0.0.0.0:8189 'da çalışıyor..." << endl;
+
     //Set HTTP listener address and port
     drogon::app()
         .setUploadPath(string(uploadDir))
@@ -24,5 +26,5 @@ int main() {
     //drogon::app().loadConfigFile("../config.json");
     //drogon::app().loadConfigFile("../config.yaml");
     //Run HTTP framework,the method will block in the internal event loop
-    return 0;
+    return EXIT_SUCCESS;
 }

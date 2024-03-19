@@ -31,7 +31,8 @@ void productController::getProduct(const HttpRequestPtr& req, std::function<void
     if(sqlResult.size() <= 0){
         
         Json::Value jVal;
-        jVal["getProduct"] = "null";
+        jVal["getProduct"] = Json::nullValue;
+        jVal["message"] = "Ürün bulunamadı.";
         json = jVal;
     }
     else{

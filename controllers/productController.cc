@@ -143,6 +143,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
         jsonResponse["error_message"] = "requestte hiç dosya yok.";
     }
 
+    LOG_INFO << "Metod: addProduct()";
     LOG_INFO << "Talep gelen ip adresi: " << req->peerAddr().toIp();
     auto resp = HttpResponse::newHttpJsonResponse(jsonResponse);
     resp->setContentTypeCode(CT_APPLICATION_JSON);

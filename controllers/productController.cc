@@ -140,10 +140,10 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                 }
             }
         }
-    }
-    else{
-        jsonResponse["addProduct"] = "hata";
-        jsonResponse["error_message"] = "requestte hiç dosya yok.";
+        else{
+            jsonResponse["addProduct"] = "hata";
+            jsonResponse["error_message"] = "requestte hiç dosya yok.";
+        }
     }
 
     LOG_INFO << "Metod: addProduct()";

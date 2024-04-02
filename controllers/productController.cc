@@ -117,7 +117,8 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                         Json::Value jsonFileValue;
                         jsonFileValue["json"] = "ok";
                         jsonResponse["files"].append(jsonFileValue);
-                        jsonResponse["addProduct"] = "ok";
+
+                        LOG_INFO << "Stok kartı kaydedildi.";
                     }
                 }
                 if(file.getContentType() == ContentType::CT_IMAGE_PNG){
@@ -137,6 +138,8 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                     imageJson["image"] = "ok";
                     jsonResponse["files"].append(imageJson);
                     jsonResponse["addProduct"] = "ok";
+
+                    LOG_INFO << "resim kaydedildi.";
                 }
             }
         }

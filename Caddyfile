@@ -1,3 +1,8 @@
+www.basat.dev, basat.dev {
+    root * /home/basat_site
+    file_server
+}
+
 www.api.basat.dev {
     redir https://basat.dev/{uri}
 }

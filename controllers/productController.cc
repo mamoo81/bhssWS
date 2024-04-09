@@ -85,68 +85,65 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
     MultiPartParser multiPart;
     multiPart.parse(req);
 
-    if(req->contentType() == ContentType::CT_MULTIPART_FORM_DATA){
+    if(multiPart.getFiles().size() > 0){
         
-        if(multiPart.getFiles().size() > 0){
-            
-            for(auto &file : multiPart.getFiles()){
+        for(auto &file : multiPart.getFiles()){
 
-                if(file.getContentType() == ContentType::CT_APPLICATION_JSON){
-                    // char datayı Json::Value nesnesine çevirme
-                    // requeste gelen "data.json" dosyasını burada işliyorum.
-                    Json::CharReaderBuilder builder;
-                    std::istringstream jsonStream(file.fileData());
-                    Json::parseFromStream(builder, jsonStream, &json, nullptr);
-                    // char datayı çevirme bitti.
+            if(file.getContentType() == ContentType::CT_APPLICATION_JSON){
+                // char datayı Json::Value nesnesine çevirme
+                // requeste gelen "data.json" dosyasını burada işliyorum.
+                Json::CharReaderBuilder builder;
+                std::istringstream jsonStream(file.fileData());
+                Json::parseFromStream(builder, jsonStream, &json, nullptr);
+                // char datayı çevirme bitti.
 
-                    // veritabanına işleme başlangıç.
-                    sqlResult = work.exec_params("select * from productcards where barcode = $1", json["barcode"].asString());
-                    if(sqlResult.size() > 0){
-                        // barkod var ise kodlanacak...
-                        // var olan ürünün barkodunu cevaba false olarak kayıt etme
+                // veritabanına işleme başlangıç.
+                sqlResult = work.exec_params("select * from productcards where barcode = $1", json["barcode"].asString());
+                if(sqlResult.size() > 0){
+                    // barkod var ise kodlanacak...
+                    // var olan ürünün barkodunu cevaba false olarak kayıt etme
 
-                        jsonResponse["addProduct"] = "hata";
-                        jsonResponse["error_message"] = "Bu barkod başka bir ürüne tanımlı.";
-                    }
-                    else{
-                        work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
-                                    "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", json["barcode"].asString(), json["name"].asString(), json["fullname"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
-                        
-                        work.commit();
-
-                        Json::Value jsonFileValue;
-                        jsonFileValue["json"] = "ok";
-                        jsonResponse["files"].append(jsonFileValue);
-
-                        LOG_INFO << "Stok kartı kaydedildi.";
-                    }
+                    jsonResponse["addProduct"] = "hata";
+                    jsonResponse["error_message"] = "Bu barkod başka bir ürüne tanımlı.";
                 }
-                if(file.getContentType() == ContentType::CT_IMAGE_PNG){
-
-                    string fileMD5 = file.getMd5();
-                    string newFileName = fileMD5 + "." + std::string(file.getFileExtension());
-                    file.saveAs(newFileName);
-
-                    //veritabanına da bu bilgileri kaydedelim.
-                    /*
-                        burayı iyileştir. daha önce kaydedilmişmi vb. şeyler.
-                    */
-                    work.exec_params("insert into images (barcode, hash) values($1, $2)", json["barcode"].asString(), fileMD5);
+                else{
+                    work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
+                                "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", json["barcode"].asString(), json["name"].asString(), json["fullname"].asString(), json["unit"].asInt(), json["category"].asInt(), json["subcategory"].asInt(), json["price"].asDouble(), json["kdv"].asInt(), json["otv"].asInt(), json["producer"].asInt());
+                    
                     work.commit();
 
-                    Json::Value imageJson;
-                    imageJson["image"] = "ok";
-                    jsonResponse["files"].append(imageJson);
+                    Json::Value jsonFileValue;
+                    jsonFileValue["json"] = "ok";
+                    jsonResponse["files"].append(jsonFileValue);
                     jsonResponse["addProduct"] = "ok";
-
-                    LOG_INFO << "resim kaydedildi.";
+                    LOG_INFO << "Stok kartı kaydedildi.";
                 }
             }
+            if(file.getContentType() == ContentType::CT_IMAGE_PNG){
+
+                string fileMD5 = file.getMd5();
+                string newFileName = fileMD5 + "." + std::string(file.getFileExtension());
+                file.saveAs(newFileName);
+
+                //veritabanına da bu bilgileri kaydedelim.
+                /*
+                    burayı iyileştir. daha önce kaydedilmişmi vb. şeyler.
+                */
+                work.exec_params("insert into images (barcode, hash) values($1, $2)", json["barcode"].asString(), fileMD5);
+                work.commit();
+
+                Json::Value imageJson;
+                imageJson["image"] = "ok";
+                jsonResponse["files"].append(imageJson);
+                jsonResponse["addProduct"] = "ok";
+
+                LOG_INFO << "resim kaydedildi.";
+            }
         }
-        else{
-            jsonResponse["addProduct"] = "hata";
-            jsonResponse["error_message"] = "requestte hiç dosya yok.";
-        }
+    }
+    else{
+        jsonResponse["addProduct"] = "hata";
+        jsonResponse["error_message"] = "requestte hiç dosya yok.";
     }
 
     LOG_INFO << "Metod: addProduct()";

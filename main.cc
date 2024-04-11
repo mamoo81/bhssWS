@@ -16,7 +16,7 @@ int main() {
 
     //Set HTTP listener address and port
     drogon::app()
-        .setUploadPath(string(uploadDir)).setClientMaxBodySize(256*1024*1024).setClientMaxMemoryBodySize(1024*1024)
+        .setUploadPath(string(uploadDir)).setClientMaxBodySize(8*1024*1024).setClientMaxMemoryBodySize(1024*1024)
         .setThreadNum(4)
         // .enableRunAsDaemon()
         .setFileTypes({"json", "png"})

@@ -26,6 +26,7 @@ class productController : public drogon::HttpController<productController>
     ADD_METHOD_TO(productController::getCategories, "/bhss/get/categories", Get);
     ADD_METHOD_TO(productController::getSubCategories, "/bhss/get/subcategories", Get);
     ADD_METHOD_TO(productController::getUnits, "/bhss/get/units", Get);
+    ADD_METHOD_TO(productController::addProducer, "/bhss/add/producer/{producer}", Get);
     ADD_METHOD_TO(productController::getProducers, "/bhss/get/producers", Get);
 
     METHOD_LIST_END
@@ -43,4 +44,5 @@ class productController : public drogon::HttpController<productController>
     void getSubCategories(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void getUnits(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void getProducers(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void addProducer(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, string pProducer);
 };

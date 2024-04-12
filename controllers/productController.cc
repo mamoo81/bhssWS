@@ -105,6 +105,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
 
                     jsonResponse["addProduct"] = "hata";
                     jsonResponse["error_message"] = "Bu barkod başka bir ürüne tanımlı.";
+                    break;// ürün zaten var isefor'dan çıkması için.
                 }
                 else{
                     work.exec_params("insert into productcards(barcode, name, fullname, unit, category, subcategory, price, kdv, otv, producer) "
@@ -135,8 +136,6 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                 Json::Value imageJson;
                 imageJson["image"] = "ok";
                 jsonResponse["files"].append(imageJson);
-                jsonResponse["addProduct"] = "ok";
-
                 LOG_INFO << "resim kaydedildi.";
             }
         }
@@ -454,4 +453,51 @@ void productController::getProducers(const HttpRequestPtr& req, std::function<vo
     auto response = HttpResponse::newHttpJsonResponse(json);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     callback(response);
+}
+
+void productController::addProducer(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, std::string pProducer)
+{
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+    pqxx::work work(sqlConn);
+
+    Json::Value json;
+
+    pqxx::result sqlResult(work.exec_params("select * from producers where name = $1", pProducer));
+
+    if(sqlResult.size() <= 0){
+        
+        pqxx::result res = work.exec_params("insert into producers(name) values($1)", pProducer);
+
+        if(res.affected_rows() > 0){// insert başarılı.
+            
+            work.commit();
+            json["addProducer"] = "ok";
+
+            LOG_INFO << "\n" << "Talep Metod: addProdducer()" << "\n" << "Talep ip adresi: " << req->getPeerAddr().toIp();
+            auto response = HttpResponse::newHttpJsonResponse(json);
+            response->setContentTypeCode(CT_APPLICATION_JSON);
+            response->setStatusCode(drogon::k200OK);
+            callback(response);
+        }
+        else{
+            json["addProducer"] = Json::nullValue;
+            json["error_message"] = "insert işlemi yapılamadı.";
+
+            LOG_INFO << "\n" << "Talep Metod: addProdducer()" << "\n" << "Talep ip adresi: " << req->getPeerAddr().toIp();
+            auto response = HttpResponse::newHttpJsonResponse(json);
+            response->setContentTypeCode(CT_APPLICATION_JSON);
+            response->setStatusCode(drogon::k200OK);
+            callback(response);
+        }
+    }
+    else{
+        json["addProducer"] = Json::nullValue;
+        json["error_message"] = "Bu üretici zaten mevcut.";
+
+        LOG_INFO << "\n" << "Talep Metod: addProdducer()" << "\n" << "Talep ip adresi: " << req->getPeerAddr().toIp();
+            auto response = HttpResponse::newHttpJsonResponse(json);
+            response->setContentTypeCode(CT_APPLICATION_JSON);
+            response->setStatusCode(drogon::k200OK);
+            callback(response);
+    }
 }

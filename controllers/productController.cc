@@ -512,13 +512,14 @@ void productController::getProductCards(const HttpRequestPtr& req, std::function
     auto json = req->getJsonObject();
 
     // sql sorgu cümlesini hazırlama başlangıç...
-    string sqlQuery = "select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
-                            "left join images i on "
-                            "i.barcode = p.barcode "
-                            "where category in(";
+    string sqlQuery = "";
 
     if((*json)["categories"].isArray()){ // array ise kategori belirtilmiş. değil se "categories" = "all" gelir.
         
+        sqlQuery = "select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
+                            "left join images i on i.barcode = p.barcode "
+                            "where category in(";
+
         Json::Value categories = Json::Value(Json::arrayValue);
         categories = (*json)["categories"];
 
@@ -535,11 +536,11 @@ void productController::getProductCards(const HttpRequestPtr& req, std::function
     else if((*json)["categories"].asString() == "all"){
         
         sqlQuery = "select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
-                        "left join images i on "
-                        "i.barcode = p.barcode ";
+                        "left join images i on i.barcode = p.barcode ";
     }
 
     sqlResult = work.exec(sqlQuery);
+    work.commit();
 
     Json::Value jsonResp;
 
@@ -576,7 +577,8 @@ void productController::getProductCards(const HttpRequestPtr& req, std::function
         jsonResp["productCards"] = productCards;
     }
 
-    LOG_INFO << jsonResp.toStyledString().c_str();
+    LOG_INFO << "\n" << "Talep gelen ip: " << req->getPeerAddr().toIp();
+    LOG_INFO << "\n" << "Metod: " << "getProductCards()";
     auto response = HttpResponse::newHttpJsonResponse(jsonResp);
     response->setContentTypeCode(CT_APPLICATION_JSON);
     response->setStatusCode(drogon::k200OK);

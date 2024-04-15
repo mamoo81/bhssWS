@@ -8,7 +8,10 @@ www.api.basat.dev {
 }
 
 api.basat.dev {
-    reverse_proxy localhost:8189
+    reverse_proxy /bhss/* localhost:8189
+    # üst satırda ki gibi mesela /bkro/* içinde yine aynı sunucuda başka bir portta çalışan drogon uygulamasına yönlendirebilirsin.
+    # örnek aşağıda ki satır basat kafe restoran otomasyonu(bkro) gibi örneklendirilebilir.
+    # reverse_proxy /bkro/* localhost:8190
 }
 
 img.basat.dev {

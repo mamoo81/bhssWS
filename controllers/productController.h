@@ -28,6 +28,7 @@ class productController : public drogon::HttpController<productController>
     ADD_METHOD_TO(productController::getUnits, "/bhss/get/units", Get);
     ADD_METHOD_TO(productController::addProducer, "/bhss/add/producer/{producer}", Get);
     ADD_METHOD_TO(productController::getProducers, "/bhss/get/producers", Get);
+    ADD_METHOD_TO(productController::getProductCards, "/bhss/get/productcards", Post);
 
     METHOD_LIST_END
     // your declaration of processing function maybe like this:
@@ -45,4 +46,5 @@ class productController : public drogon::HttpController<productController>
     void getUnits(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void getProducers(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addProducer(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, string pProducer);
+    void getProductCards(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
 };

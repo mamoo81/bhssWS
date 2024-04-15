@@ -495,9 +495,90 @@ void productController::addProducer(const HttpRequestPtr& req, std::function<voi
         json["error_message"] = "Bu üretici zaten mevcut.";
 
         LOG_INFO << "\n" << "Talep Metod: addProdducer()" << "\n" << "Talep ip adresi: " << req->getPeerAddr().toIp();
-            auto response = HttpResponse::newHttpJsonResponse(json);
-            response->setContentTypeCode(CT_APPLICATION_JSON);
-            response->setStatusCode(drogon::k200OK);
-            callback(response);
+        
+        auto response = HttpResponse::newHttpJsonResponse(json);
+        response->setContentTypeCode(CT_APPLICATION_JSON);
+        response->setStatusCode(drogon::k200OK);
+        callback(response);
     }
+}
+
+void productController::getProductCards(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
+    auto json = req->getJsonObject();
+
+    // sql sorgu cümlesini hazırlama başlangıç...
+    string sqlQuery = "select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
+                            "left join images i on "
+                            "i.barcode = p.barcode "
+                            "where category in(";
+
+    if((*json)["categories"].isArray()){ // array ise kategori belirtilmiş. değil se "categories" = "all" gelir.
+        
+        Json::Value categories = Json::Value(Json::arrayValue);
+        categories = (*json)["categories"];
+
+        int last = categories.size() -1;
+        for(const auto &id : categories){
+            sqlQuery.append(id.as<std::string>());
+            if(id != categories[last]){
+                sqlQuery += ", ";
+            }
+        }
+        sqlQuery.append(")");
+        // sql sorgu cümlesi hazırlama bitiş.........
+    }
+    else if((*json)["categories"].asString() == "all"){
+        
+        sqlQuery = "select p.id, p.barcode, p.name, p.fullname, p.unit, p.category, p.subcategory, p.price, p.kdv, p.otv, p.date, p.lastdate, p.producer, i.hash from productcards p "
+                        "left join images i on "
+                        "i.barcode = p.barcode ";
+    }
+
+    sqlResult = work.exec(sqlQuery);
+
+    Json::Value jsonResp;
+
+    if(sqlResult.size() > 0){
+        
+        Json::Value productCards = Json::Value(Json::arrayValue);
+
+        for(const auto &row : sqlResult){
+
+            Json::Value product;
+            product["id"] = row[0].as<int>();
+            product["barcode"] = row[1].as<string>();
+            product["name"] = row[2].as<string>();
+            product["fullname"] = row[3].as<string>();
+            product["unit"] = row[4].as<int>();
+            product["category"] = row[5].as<int>();
+            product["subcategory"] = row[6].as<int>();
+            product["price"] = row[7].as<double>();
+            product["kdv"] = row[8].as<int>();
+            product["otv"] = row[9].as<int>();
+            product["date"] = pqxx::to_string(row[10]);
+            product["lastdate"] = pqxx::to_string(row[11]);
+            product["producer"] = row[12].as<int>();
+            if(!row[13].is_null()){
+                product["image-hash"] = row[13].as<string>();
+            }
+            else{
+                product["image-hash"] = Json::nullValue;
+            }
+
+            productCards.append(product);
+        }
+
+        jsonResp["productCards"] = productCards;
+    }
+
+    LOG_INFO << jsonResp.toStyledString().c_str();
+    auto response = HttpResponse::newHttpJsonResponse(jsonResp);
+    response->setContentTypeCode(CT_APPLICATION_JSON);
+    response->setStatusCode(drogon::k200OK);
+    callback(response);
 }

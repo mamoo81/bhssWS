@@ -16,7 +16,7 @@ class productController : public drogon::HttpController<productController>
     // METHOD_ADD(productController::get, "/{2}/{1}", Get); // path is /productController/{arg2}/{arg1}
     // METHOD_ADD(productController::your_method_name, "/{1}/{2}/list", Get); // path is /productController/{arg1}/{arg2}/list
     // ADD_METHOD_TO(productController::your_method_name, "/absolute/path/{1}/{2}/list", Get); // path is /absolute/path/{arg1}/{arg2}/list
-    ADD_METHOD_TO(productController::sayHello, "/", Get);
+    ADD_METHOD_TO(productController::sayHello, "/bhss", Get);
     ADD_METHOD_TO(productController::getProduct, "/bhss/get/product/{barcode}", Get);
     ADD_METHOD_TO(productController::addProduct, "/bhss/add/product", Post);
     ADD_METHOD_TO(productController::deleteProducts, "/bhss/delete/product", Post);

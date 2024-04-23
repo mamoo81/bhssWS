@@ -4,9 +4,11 @@
 #include <drogon/HttpController.h>
 #include <chrono>
 #include <string>
+#include <Magick++.h>
 
 using namespace drogon;
 using namespace std;
+using namespace Magick;
 
 class productController : public drogon::HttpController<productController>
 {

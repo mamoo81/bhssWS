@@ -32,7 +32,9 @@ add_executable(${PROJECT_NAME} main.cc)
 # and comment out the following lines
 find_package(Drogon CONFIG REQUIRED)
 find_package(Fmt CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon -lpqxx -lpq fmt::fmt)
+find_package(ImageMagick COMPONENTS Magick++)
+include_directories(${ImageMagick_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon -lpqxx -lpq fmt::fmt ${ImageMagick_LIBRARIES})
 
 # ##############################################################################
 

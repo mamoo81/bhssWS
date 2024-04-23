@@ -121,10 +121,14 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
                 }
             }
             if(file.getContentType() == ContentType::CT_IMAGE_PNG){
-
+                
                 string fileMD5 = file.getMd5();
                 string newFileName = fileMD5 + "." + std::string(file.getFileExtension());
                 file.saveAs(newFileName);
+                //Magick++ ile resim dosyasını 512x512 olarak yenien boyutlandırma ve aynı isimle tekrar kayıt etme.
+                Image img(app().getUploadPath() + "/" + newFileName);
+                img.resize("512x512");
+                img.write(app().getUploadPath() + "/" + newFileName);
 
                 //veritabanına da bu bilgileri kaydedelim.
                 /*
@@ -570,7 +574,6 @@ void productController::getProductCards(const HttpRequestPtr& req, std::function
             else{
                 product["image-hash"] = Json::nullValue;
             }
-
             productCards.append(product);
         }
 

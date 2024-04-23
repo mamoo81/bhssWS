@@ -85,7 +85,7 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
     MultiPartParser multiPart;
     multiPart.parse(req);
 
-    if(multiPart.getFiles().size() > 0){
+    if(multiPart.getFiles().size() == 2){
         
         for(auto &file : multiPart.getFiles()){
 
@@ -144,9 +144,19 @@ void productController::addProduct(const HttpRequestPtr& req, std::function<void
             }
         }
     }
-    else{
+    else if(multiPart.getFiles().size() == 0){
         jsonResponse["addProduct"] = "hata";
-        jsonResponse["error_message"] = "requestte hiç dosya yok.";
+        jsonResponse["error_message"] = "Request'te hiç dosya yok.";
+    }
+    else if(multiPart.getFiles().size() == 1){
+        jsonResponse["addProduct"] = "hata";
+        
+        if(multiPart.getFiles()[0].getContentType() == ContentType::CT_APPLICATION_JSON){
+            jsonResponse["error_message"] = "Request'te resim dosyası eksik.";
+        }
+        else if(multiPart.getFiles()[0].getContentType() == ContentType::CT_IMAGE_PNG){
+            jsonResponse["error_message"] = "Request'te Json dosyası eksik.";
+        }
     }
 
     LOG_INFO << "Metod: addProduct()";

@@ -5,6 +5,8 @@
 #include <chrono>
 #include <string>
 #include <Magick++.h>
+#include "bcrypt/BCrypt.hpp"
+#include "includes/verify.h"
 
 using namespace drogon;
 using namespace std;
@@ -13,6 +15,15 @@ using namespace Magick;
 class productController : public drogon::HttpController<productController>
 {
   public:
+
+    enum ERROR_CODE {
+      KULLANICI_ADI_ZATEN_MEVCUT = 1001,
+      CEP_NO_ZATEN_MEVCUT = 1002,
+      KART_ZATEN_MEVCUT = 1003,
+      GIRIS_BILGILERI_HATALI = 1004,
+      VERGINO_ZATEN_MEVCUT = 1005
+    };
+
     METHOD_LIST_BEGIN
     // use METHOD_ADD to add your custom processing function here;
     // METHOD_ADD(productController::get, "/{2}/{1}", Get); // path is /productController/{arg2}/{arg1}
@@ -31,6 +42,11 @@ class productController : public drogon::HttpController<productController>
     ADD_METHOD_TO(productController::addProducer, "/bhss/add/producer/{producer}", Get);
     ADD_METHOD_TO(productController::getProducers, "/bhss/get/producers", Get);
     ADD_METHOD_TO(productController::getProductCards, "/bhss/get/productcards", Post);
+    ADD_METHOD_TO(productController::login, "/bhss/login", {Get, Post});
+    // ADD_METHOD_TO(productController::logintest, "/bhss/logintest", {Get, Post});
+    ADD_METHOD_TO(productController::userVerify, "/bhss/userverify", Post);
+    ADD_METHOD_TO(productController::verifyCode, "/bhss/verifycode", Post);
+    ADD_METHOD_TO(productController::signup, "bhss/signup", Post);
 
     METHOD_LIST_END
     // your declaration of processing function maybe like this:
@@ -49,4 +65,13 @@ class productController : public drogon::HttpController<productController>
     void getProducers(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
     void addProducer(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback, string pProducer);
     void getProductCards(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void login(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void userVerify(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void verifyCode(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    // void logintest(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+    void signup(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback);
+
+    private:
+
+    Verify verify;
 };

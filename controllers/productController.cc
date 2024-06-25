@@ -6,7 +6,7 @@
 #include <vector>
 #include <openssl/sha.h>
 
-
+// constexpr char SECRET_KEY[] = "GİZLİ_KOD";
 
 void productController::sayHello(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
 {
@@ -596,4 +596,212 @@ void productController::getProductCards(const HttpRequestPtr& req, std::function
     response->setContentTypeCode(CT_APPLICATION_JSON);
     response->setStatusCode(drogon::k200OK);
     callback(response);
+}
+
+void productController::login(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    auto username = req->getParameter("username");
+    auto password = req->getParameter("password");
+
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
+    sqlResult = work.exec_params("select username, password from users where username = $1", username);
+
+    if(sqlResult.size() > 0){
+        req->session()->insert("loggedin", true);
+        callback(HttpResponse::newHttpResponse());
+    }
+    else{
+        HttpResponsePtr resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(k401Unauthorized);
+        callback(resp);
+    }
+}
+
+// void productController::logintest(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+// {
+//     bool loggedin = req->session()->getOptional<bool>("loggedin").value_or(false);
+
+//     HttpResponsePtr resp = HttpResponse::newHttpResponse();
+
+//     if(loggedin){
+//         resp->setBody("<h1>giriş yapılmış</h1>");
+//         callback(resp);
+//     }
+//     else{
+//         resp->setBody("<h1>giriş yap</h1>");
+//         resp->setStatusCode(k401Unauthorized);
+//         callback(resp);
+//     }
+// }
+
+void productController::userVerify(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    Json::Value reqJson = (*req->getJsonObject());
+
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
+    Json::Value jsonResponse;
+
+    Json::Value errorArray = Json::Value(Json::arrayValue);
+    Json::Value errorValue;
+    sqlResult = work.exec_params("select username from users where username = $1", reqJson["username"].asString());
+
+    if(sqlResult.size() > 0){
+
+        errorValue = ERROR_CODE::KULLANICI_ADI_ZATEN_MEVCUT;
+        errorArray.append(errorValue);
+    }
+
+    sqlResult = work.exec_params("select taxnumber, phone from companies where taxnumber = $1 or phone = $2",
+                                 reqJson["company"]["taxnumber"].asString(),
+                                 reqJson["company"]["phone"].asString());
+    if(sqlResult.size() > 0){
+
+        for(auto const row : sqlResult){
+            if(row[0].c_str() == reqJson["company"]["taxnumber"].asString()){
+                errorValue = ERROR_CODE::VERGINO_ZATEN_MEVCUT;
+                errorArray.append(errorValue);
+            }
+            if(row[1].c_str() == reqJson["company"]["phone"].asString()){
+                errorValue = ERROR_CODE::CEP_NO_ZATEN_MEVCUT;
+                errorArray.append(errorValue);
+            }
+        }
+
+        jsonResponse["signup"] = "error";
+        jsonResponse["error_codes"] = errorArray;
+        callback(HttpResponse::newHttpJsonResponse(jsonResponse));
+        return;https://master.dl.sourceforge.net/project/milislinux/images/milis-2.3-desktop-2024.05.06.iso?viasf=1
+    }
+
+    // Verify verify;
+    int ret = verify.OTPSend(reqJson["username"].asString(), reqJson["phone"].asString(), Verify::VerifyChannel::MAIL);
+    if(ret == Verify::VerifyErrors::Successful){
+
+        LOG_INFO << "MAİL GÖNDERİMİ BAŞARILI";
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>Mail atıldı.</body>");
+        callback(resp);
+        return;
+    }
+    else if(ret == Verify::VerifyErrors::Inprocess) {
+        LOG_INFO << "mail zaten gönderilmiş!!!";
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>Mail zaten atılmış</body>");
+        callback(resp);
+        return;
+    }
+    else{
+        LOG_INFO << "mail gönderilemedi.!!!";
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>Mail gönderilemedi. bilinmeyen hata...</body>");
+        callback(resp);
+        return;
+    }
+}
+
+void productController::verifyCode(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    Json::Value reqJson = (*req->getJsonObject());
+    Json::Value jsonResponse;
+
+    Verify::VerifyChannel channel;
+    if(reqJson["channel"].asInt() == 2){
+        channel = Verify::VerifyChannel::MAIL;
+    }
+    else if(reqJson["channel"].asInt() == 1){
+        channel = Verify::VerifyChannel::SMS;
+    }
+    else {
+        callback(HttpResponse::newNotFoundResponse());
+        return;
+    }
+
+    int ret = verify.verifyOTPCode(reqJson["mail"].asString(),
+                                    reqJson["phone"].asString(),
+                                    reqJson["code"].asString(),
+                                    channel);
+
+    if(ret == Verify::VerifyErrors::Expired){
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>kodun süresi dolmuş</body>");
+        callback(resp);
+        return;
+    }
+    else if(ret == Verify::VerifyErrors::Correct){
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>kod hatalı</body>");
+        callback(resp);
+        return;
+    }
+    else if(ret == Verify::VerifyErrors::Successful){
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>Kod doğru</body>");
+        callback(resp);
+        return;
+    }
+    else{
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setBody("<body>bilinmeyen hata</body>");
+        callback(resp);
+        return;
+    }
+}
+
+void productController::signup(const HttpRequestPtr& req, std::function<void(const HttpResponsePtr&)> &&callback)
+{
+    Json::Value jsonreq = (*req->getJsonObject());
+
+    pqxx::connection sqlConn("hostaddr=127.0.0.1 port=5432 dbname=bhssdb user=postgres password=postgres");
+    pqxx::result sqlResult;
+    pqxx::work work(sqlConn);
+
+    // insert company infos
+    try
+    {
+        sqlResult = work.exec_params("insert into companies(name, address, phone, mail, city, district, authorizename, authorizemail, authorizephone, taxadministration, taxnumber) "
+                        "values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+                        jsonreq["company"]["name"].asString(),
+                        jsonreq["company"]["address"].asString(),
+                        jsonreq["company"]["phone"].asString(),
+                        jsonreq["company"]["mail"].asString(),
+                        jsonreq["company"]["city"].asInt(),
+                        jsonreq["company"]["district"].asInt(),
+                        jsonreq["company"]["authorizename"].asString(),
+                        jsonreq["company"]["authorizemail"].asString(),
+                        jsonreq["company"]["authorizephone"].asString(),
+                        jsonreq["company"]["taxadministration"].asInt(),
+                        jsonreq["company"]["taxnumber"].asString());
+        work.commit();
+    }
+    catch(pqxx::sql_error const &e)
+    {
+        std::cerr << "sqlerror: " << e.what() << '\n';
+    }
+    // insert user infos
+    try
+    {
+        std::string passwordHash = BCrypt::generateHash(jsonreq["password"].asString());
+        sqlResult = work.exec_params("insert into users(username, password, mail, company) "
+                                    " values($1, $2, $3, (select id from companies where mail = $4))",
+                                    jsonreq["username"].asString(),
+                                    passwordHash,
+                                    jsonreq["username"].asString(),
+                                    jsonreq["username"].asString());
+                                    work.commit();
+    }
+    catch(pqxx::sql_error const &e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
+
+    auto resp = HttpResponse::newHttpResponse();
+    resp->setBody("<body></body>");
+    callback(resp);
 }

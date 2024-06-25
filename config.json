@@ -2,8 +2,20 @@
     "listeners" : [
         {
             "address" : "0.0.0.0",
-            "port" : "8189",
+            "port" : 8189,
             "https" : false
         }
-    ]
+    ],
+    "app" : {
+        "upload_path" : "~/product-images",
+        "enable_session": true,
+        "session_timeout": 1200,
+        "thread_num" : 4,
+        "client_max_body_size": "10M",
+        "client_max_memory_body_size": "1M",
+        "file_types": [
+            "png",
+            "json"
+        ]
+    }
 }

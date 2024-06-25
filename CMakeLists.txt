@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(bhssWS CXX)
+project(bhssWS LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -33,9 +33,38 @@ add_executable(${PROJECT_NAME} main.cc)
 find_package(Drogon CONFIG REQUIRED)
 find_package(Fmt CONFIG REQUIRED)
 find_package(ImageMagick COMPONENTS Magick++)
-include_directories(${ImageMagick_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon -lpqxx -lpq fmt::fmt ${ImageMagick_LIBRARIES})
 
+add_library(verify SHARED
+    includes/verify.h
+    includes/verify.cpp
+)
+target_include_directories(verify PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includes)
+target_link_libraries(verify PRIVATE mailio)
+
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost REQUIRED COMPONENTS regex date_time system)
+find_package(mailio REQUIRED COMPONENTS)
+find_package(OpenSSL REQUIRED)
+if(OpenSSL_FOUND)
+    message("OpenSSL bulundu")
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
+endif()
+
+if(Boost_FOUND)
+    message("Boost kütüphanesi bulundu.")
+    include_directories(${Boost_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${Boost_LIBRARIES})
+endif()
+
+if(mailio_FOUND)
+    message("mailio bulundu")
+    target_link_libraries(${PROJECT_NAME} PRIVATE mailio)
+endif()
+
+include_directories(${ImageMagick_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon mailio verify -lpqxx -lpq -lbcrypt fmt::fmt ${ImageMagick_LIBRARIES})
 # ##############################################################################
 
 if (CMAKE_CXX_STANDARD LESS 17)
@@ -63,7 +92,8 @@ drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/models)
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/models
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/includes)
 target_sources(${PROJECT_NAME}
                PRIVATE
                ${SRC_DIR}

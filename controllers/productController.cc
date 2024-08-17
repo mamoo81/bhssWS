@@ -676,7 +676,7 @@ void productController::userVerify(const HttpRequestPtr& req, std::function<void
         jsonResponse["signup"] = "error";
         jsonResponse["error_codes"] = errorArray;
         callback(HttpResponse::newHttpJsonResponse(jsonResponse));
-        return;https://master.dl.sourceforge.net/project/milislinux/images/milis-2.3-desktop-2024.05.06.iso?viasf=1
+        return;
     }
 
     // Verify verify;
